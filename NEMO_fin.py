@@ -1,11 +1,8 @@
-###########################################################################################################
-###########################################################################################################
+
 ###########################################################################################################
 ######## author = Jithin Raghavan
 ######## website = https://www.linkedin.com/in/jithinraghavan/
 ######## layout inspired by https://share.streamlit.io/tylerjrichards/streamlit_goodreads_app/books.py
-###########################################################################################################
-###########################################################################################################
 ###########################################################################################################
 
 import streamlit as st
@@ -30,7 +27,7 @@ types = ["Mean","Median","Maximum","Minimum","Sum"]
 
 label_attr_dict = {"Packages":"packages","FEDEX Packages":"fedex_packages","UPS Packages":"ups_packages","Other Service Packages":"other_service_packages","No Service Packages":"no_service_packages","Long Zone Packages":"longzone_packages","Zone 2 Packages":"zone_two_packages","Total Zone":"total_zone","Avg. Zone":"average_zone","Total Lines":"total_lines","Average Lines":"average_lines","Total Units":"total_units","Avg. Units":"average_units","Total Shipcost":"total_shipcost","Avg.Shipcost":"average_shipcost","Total Package Weight":"total_package_weight","Avg. Package Weight":"average_package_weight"}
 
-color_dict = {'1.0': '#fc4744', '2.0':'#8c0303', '3':'#edd134', '4':'#fa2323', '5':'#cf0c0c', '6':'#e62222','7':'#1f9900', '8':'#fff830', '9':'#dbca12', '10':'#d10606', '11':'#007512', '12':'#b50300','13':'#1c2afc', '14':'#eb3838', '15':'#061fc2', '16':'#127a18', '17':'#005ac2', '18':'#0707a8','19':'#d1332e', '20':'#0546b5', '21':'#265ade', '22':'#2b82d9', '23':'#f57171','24':'#38d433','25':'#10a30b','26': '#fc4744', '27':'#8c0303', '28':'#edd134', '29':'#fa2323', '30':'#cf0c0c','31':'#e62222', '32':'#1f9900', '33':'#fff830', '34':'#dbca12', '35':'#d10606', '36':'#007512','37':'#b50300', '38':'#1c2afc', '39':'#eb3838', '40':'#061fc2', '41':'#127a18', '42':'#005ac2','43':'#0707a8', '44':'#d1332e', '45':'#0546b5', '46':'#265ade', '47':'#2b82d9', '48':'#f57171','49':'#38d433', '50':'#10a30b','51': '#fc4744','NA':'#edd134'}
+color_dict = {'IL': '#fc4744', 'CA':'#8c0303', 'MO':'#edd134', 'TX':'#fa2323', 'NM':'#cf0c0c', 'OH':'#e62222','VA':'#1f9900', 'MD':'#fff830', 'MI':'#dbca12', 'NJ':'#d10606', 'NY':'#007512', 'TN':'#b50300','IN':'#1c2afc', 'WA':'#eb3838', 'ID':'#061fc2', 'KY':'#127a18', 'PA':'#005ac2', 'DE':'#0707a8','CO':'#d1332e', 'NH':'#0546b5', 'MA':'#265ade', 'RI':'#2b82d9', 'MT':'#f57171','NV':'#38d433','CT':'#10a30b','WV': '#fc4744', 'ME':'#8c0303', 'LA':'#edd134', 'OK':'#fa2323', 'OR':'#cf0c0c','AR':'#e62222', 'KS':'#1f9900', 'MS':'#fff830', 'DC':'#dbca12', 'AK':'#d10606', 'HI':'#007512','VT':'#b50300', 'UT':'#1c2afc', 'FL':'#eb3838', 'AL':'#061fc2', 'MN':'#127a18', 'GA':'#005ac2','SC':'#0707a8', 'AZ':'#d1332e', 'NC':'#0546b5', 'WI':'#265ade', 'IA':'#2b82d9', 'NE':'#f57171','SD':'#38d433', 'ND':'#10a30b','WY': '#fc4744'}
 
 ### Helper Methods ###
 def get_unique_scenarios(df_data):
@@ -42,10 +39,11 @@ def get_unique_dates(df_data):
     return np.unique(df_data.order_date).tolist()
 
 def get_unique_states(df_data):
-    states = list(np.unique(np.array(df_data.state)))
-    states = [x for x in states if str(x) != 'nan']
-    unique_states = [int(x) for x in states]
-    return unique_states
+    # states = list(np.unique(np.array(df_data.state)))
+    # states = [x for x in states if str(x) != 'nan']
+    # unique_states = [int(x) for x in states]
+    # return unique_states
+    return df_data.state.unique().tolist()
 
 def filter_scenario(df_data):
     df_filtered_scenario = pd.DataFrame()
@@ -100,19 +98,19 @@ def group_measure_by_attribute(aspect,attribute,measure):
 
 def plot_x_per_scenario(attr,measure):
     rc = {'figure.figsize':(8,4.5),
-          'axes.facecolor':'#0e1117',
-          'axes.edgecolor': '#0e1117',
-          'axes.labelcolor': 'white',
-          'figure.facecolor': '#0e1117',
-          'patch.edgecolor': '#0e1117',
-          'text.color': 'white',
-          'xtick.color': 'white',
-          'ytick.color': 'white',
+          'axes.facecolor':'#ffffff',
+          'axes.edgecolor': '#ffffff',
+          'axes.labelcolor': 'black',
+          'figure.facecolor': '#ffffff',
+          'patch.edgecolor': '#ffffff',
+          'text.color': 'black',
+          'xtick.color': 'black',
+          'ytick.color': 'black',
           'grid.color': 'grey',
           'font.size' : 8,
-          'axes.labelsize': 12,
+          'axes.labelsize': 9,
           'xtick.labelsize': 8,
-          'ytick.labelsize': 12}
+          'ytick.labelsize': 8}
     plt.rcParams.update(rc)
     fig, ax = plt.subplots()
     ### Goals
@@ -125,7 +123,7 @@ def plot_x_per_scenario(attr,measure):
     if measure == "Minimum" or measure == "Maximum":
         y_str = measure + " " + attr + " in the Scenario"
 
-    ax.set(xlabel = "Scenario", ylabel = y_str)
+    ax.set(xlabel = "Scenario Name", ylabel = y_str)
     if measure == "Mean" or attribute in ["average_zone","average_lines","average_units","average_shipcost","average_package_weight"]:
         for p in ax.patches:
             ax.annotate(format(p.get_height(), '.2f'),
@@ -147,19 +145,19 @@ def plot_x_per_scenario(attr,measure):
 
 def plot_x_per_state(attr,measure): #total #against, #conceived
     rc = {'figure.figsize':(8,4.5),
-          'axes.facecolor':'#0e1117',
-          'axes.edgecolor': '#0e1117',
-          'axes.labelcolor': 'white',
-          'figure.facecolor': '#0e1117',
-          'patch.edgecolor': '#0e1117',
-          'text.color': 'white',
-          'xtick.color': 'white',
-          'ytick.color': 'white',
+          'axes.facecolor':'#ffffff',
+          'axes.edgecolor': '#ffffff',
+          'axes.labelcolor': 'black',
+          'figure.facecolor': '#ffffff',
+          'patch.edgecolor': '#ffffff',
+          'text.color': 'black',
+          'xtick.color': 'black',
+          'ytick.color': 'black',
           'grid.color': 'grey',
-          'font.size' : 8,
-          'axes.labelsize': 12,
-          'xtick.labelsize': 8,
-          'ytick.labelsize': 12}
+          'font.size' : 7,
+          'axes.labelsize': 10,
+          'xtick.labelsize': 7,
+          'ytick.labelsize': 7}
 
     plt.rcParams.update(rc)
     fig, ax = plt.subplots()
@@ -201,19 +199,19 @@ def plot_x_per_state(attr,measure): #total #against, #conceived
 def plt_attribute_correlation(aspect1, aspect2):
     df_plot = df_data_filtered
     rc = {'figure.figsize':(8,4.5),
-          'axes.facecolor':'#0e1117',
-          'axes.edgecolor': '#0e1117',
-          'axes.labelcolor': 'white',
-          'figure.facecolor': '#0e1117',
-          'patch.edgecolor': '#0e1117',
-          'text.color': 'white',
-          'xtick.color': 'white',
-          'ytick.color': 'white',
+          'axes.facecolor':'#ffffff',
+          'axes.edgecolor': '#ffffff',
+          'axes.labelcolor': 'black',
+          'figure.facecolor': '#ffffff',
+          'patch.edgecolor': '#ffffff',
+          'text.color': 'black',
+          'xtick.color': 'black',
+          'ytick.color': 'black',
           'grid.color': 'grey',
-          'font.size' : 8,
-          'axes.labelsize': 12,
+          'font.size' : 7,
+          'axes.labelsize': 10,
           'xtick.labelsize': 8,
-          'ytick.labelsize': 12}
+          'ytick.labelsize': 8}
     plt.rcParams.update(rc)
     fig, ax = plt.subplots()
     asp1 = label_attr_dict[aspect1]
@@ -228,24 +226,59 @@ def plt_attribute_correlation(aspect1, aspect2):
     st.pyplot(fig, ax)
 
 
+# Converting DF into map ready form
+def map_ready_data(df_data):
+    df = df_data[['lng','lat','units_scaled']]
+    map_ready_df = df.reindex(df.index.repeat(df.units_scaled))
+    map_ready_df = map_ready_df.drop(columns =['units_scaled']).reset_index(drop=True)
+    return map_ready_df
+
+# Plotting the PyDeck Chart
+def plot_map(data):
+    st.write(
+        pdk.Deck(
+                    map_style="mapbox://styles/mapbox/light-v9",
+                    initial_view_state = pdk.ViewState(
+                                                        longitude=-95.5556199,
+                                                        latitude=39.8097343,
+                                                        zoom=2.5,
+                                                        pitch=40.5,
+                                                        bearing=-27.36,
+                                        ),
+                    layers=[
+                        pdk.Layer(
+                                    "HexagonLayer",
+                                    map_ready_data(data),
+                                    get_position=["lng", "lat"],
+                                    auto_highlight=True,
+                                    elevation_scale=5000,
+                                    pickable=True,
+                                    radius = 50000,
+                                    elevation_range=[0, 200],
+                                    extruded=True,
+                                    coverage=1,
+                                )
+                            ],
+                    tooltip={'html': '<b>Number of units (in 100s):</b> {elevationValue}'}
+                ),
+            )
 
 ####################
 ### INTRODUCTION ###
 ####################
 
-# t1, t2 = st.columns((0.07,0.05))
-# t1.image('Index.jpeg', width = 100)
-
 row0_spacer1, row0_1, row0_spacer2, row0_2, row0_spacer3 = st.columns((.1, 2.3, .1, 1.3, .1))
 with row0_1:
     st.title('NEMO - Order Allocation Simulator')
+    st.caption('A streamlit App by [Jithin Raghavan](https://www.linkedin.com/in/jithinraghavan/)')
 with row0_2:
     st.text("")
-    st.subheader('Streamlit App by [Jithin Raghavan](https://www.linkedin.com/in/jithinraghavan/)')
+    # st.caption('Streamlit App by [Jithin Raghavan](https://www.linkedin.com/in/jithinraghavan/)')
+    row0_2.image('Index.jpeg', width = 100)
 row3_spacer1, row3_1, row3_spacer2 = st.columns((.1, 3.2, .1))
 with row3_1:
     st.markdown("NEMO is a simulation tool aiming to become the best-possible user resource for simulating Target's guest order allocation. It is used for studying the impact of input parameters on order allocation and is designed to help business partners in their decision making. The tool has the power to impact inventory placement and positioning, network optimization and labour planning for store operations.")
-    st.markdown("You can find the source code in the [NEMO ExploreAI Repository](https://git.target.com/JithinRaghavan/NEMO-AI-Conference)")
+    st.caption("You can find the source code in the [NEMO Demo Repository](https://github.com/Jithin-Raghavan/NEMO-Demo)")
 
 
 #################
@@ -286,7 +319,7 @@ with row2_1:
     st.markdown(str_packages)
 with row2_2:
     package_wt_in_df = df_data_filtered['total_package_weight'].sum()
-    str_package_wt = str(round(package_wt_in_df,2)) + " Grams"
+    str_package_wt = str(int(round(package_wt_in_df,0))) + " Grams in Weight"
     st.markdown(str_package_wt)
 with row2_3:
     total_units_in_df = df_data_filtered['total_units'].sum()
@@ -294,7 +327,7 @@ with row2_3:
     st.markdown(str_units)
 with row2_4:
     total_cost_in_df = df_data_filtered['total_shipcost'].sum()
-    str_cost = str(round(total_cost_in_df,2)) + " Dollars"
+    str_cost = "$" + str(int(round(total_cost_in_df,0))) + " Dollars"
     st.markdown(str_cost)
 
 row3_spacer1, row3_1, row3_spacer2 = st.columns((.2, 7.1, .2))
@@ -308,27 +341,34 @@ st.text('')
 #st.dataframe(data=df_stacked.reset_index(drop=True))
 #st.dataframe(data=df_data_filtered)
 
+### Data Import ###
+origin_demand_df = pd.read_csv("./data/origin_demand.csv")
 
 # LAYING OUT THE MIDDLE SECTION OF THE APP WITH THE MAPS
 row4_spacer1, row4_1, row4_spacer1, row4_2 = st.columns((.1,2,.1,2))
-map_data = df_data_filtered[['lng','lat','total_units']]
-
-# SETTING THE ZOOM LOCATIONS FOR THE AIRPORTS
-# chicago = [39.8097343, -98.5556199]
-# zoom_level = 3
-# midpoint = mpoint(map_data["lat"], map_data["lng"])
 
 with row4_1:
     st.write(f"""**Where is the demand originating from?**""")
-    # layer = pdk.Layer("HeatmapLayer",map_data,opacity=1,get_position=["lng", "lat"],auto_highlight=True,aggregation=String('SUM'),get_weight="total_units")
-    # r = pdk.Deck(layers=[layer])
-    # r.to_html('heatmap.html')
-    row4_1.image('DemandOrigin.png', width = 650)
+    plot_map(origin_demand_df)
 
 with row4_2:
-    st.write("**Where is our demand being fulfilled from?**")
-    row4_2.image('DemandFulfilled.png', width = 650)
+    st.write("**Where is the demand being fulfilled from?**")
+    plot_map(df_data_filtered)
 
+# with row4_1:
+#     st.write(f"""**Where is the demand originating from?**""")
+#     # layer = pdk.Layer("HeatmapLayer",map_data,opacity=1,get_position=["lng", "lat"],auto_highlight=True,aggregation=String('SUM'),get_weight="total_units")
+#     # r = pdk.Deck(layers=[layer])
+#     # r.to_html('heatmap.html')
+#     row4_1.image('DemandOrigin.png', width = 620)
+#
+# with row4_2:
+#     st.write("**Where is the demand being fulfilled from?**")
+#     row4_2.image('DemandFulfilled.png', width = 620)
+
+st.text("")
+st.text("")
+st.text("")
 
 
 ### STATE ###
@@ -384,7 +424,7 @@ with row5_2:
 ### SCENARIO ###
 row6_spacer1, row6_1, row6_spacer2 = st.columns((.2, 7.1, .2))
 with row6_1:
-    st.subheader('Analysis per Season')
+    st.subheader('Analysis per Scenario')
 row7_spacer1, row7_1, row7_spacer2, row7_2, row7_spacer3  = st.columns((.2, 2.3, .4, 4.4, .2))
 with row7_1:
     st.markdown('Investigate developments and trends. Which season had teams score the most goals? Has the amount of passes per games changed?')
