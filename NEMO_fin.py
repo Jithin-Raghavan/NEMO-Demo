@@ -234,7 +234,36 @@ def map_ready_data(df_data):
     return map_ready_df
 
 # Plotting the PyDeck Chart
-def plot_map(data):
+def plot_map_origin(data):
+    st.write(
+        pdk.Deck(
+                    map_style="mapbox://styles/mapbox/light-v9",
+                    initial_view_state = pdk.ViewState(
+                                                        longitude=-95.5556199,
+                                                        latitude=39.8097343,
+                                                        zoom=2.5,
+                                                        pitch=40.5,
+                                                        bearing=-27.36,
+                                        ),
+                    layers=[
+                        pdk.Layer(
+                                    "HexagonLayer",
+                                    map_ready_data(data),
+                                    get_position=["lng", "lat"],
+                                    auto_highlight=True,
+                                    elevation_scale=5000,
+                                    pickable=True,
+                                    radius = 50000,
+                                    elevation_range=[0, 200],
+                                    extruded=True,
+                                    coverage=1,
+                                )
+                            ],
+                    tooltip={'html': '<b>Number of units (in 1000s):</b> {elevationValue}'}
+                ),
+            )
+
+def plot_map_fulfill(data):
     st.write(
         pdk.Deck(
                     map_style="mapbox://styles/mapbox/light-v9",
@@ -262,6 +291,7 @@ def plot_map(data):
                     tooltip={'html': '<b>Number of units (in 100s):</b> {elevationValue}'}
                 ),
             )
+
 
 ####################
 ### INTRODUCTION ###
@@ -312,22 +342,26 @@ row6_spacer1, row6_1, row6_spacer2 = st.columns((.2, 7.1, .2))
 with row6_1:
     st.subheader("Allocation Summary:")
 
-row2_spacer1, row2_1, row2_spacer2, row2_2, row2_spacer3, row2_3, row2_spacer4, row2_4, row2_spacer5   = st.columns((.2, 1.6, .2, 1.6, .2, 1.6, .2, 1.6, .2))
+row2_spacer1, row2_1, row2_spacer2, row2_2, row2_spacer3, row2_3, row2_spacer4, row2_4, row2_spacer5   = st.columns((.3, 1.6, 1.3, 1.6, 1.3, 1.6, 1.3, 1.6,0.1))
 with row2_1:
     packages_in_df = df_data_filtered['packages'].sum()
-    str_packages = "🏟️ " + str(packages_in_df) + " Packages"
+    # str_packages = str(packages_in_df) + " Packages"
+    str_packages = str(packages_in_df)[0:2] + "," + str(packages_in_df)[2:5] + "," + str(packages_in_df)[5:8] + " Packages"
     st.markdown(str_packages)
 with row2_2:
     package_wt_in_df = df_data_filtered['total_package_weight'].sum()
-    str_package_wt = str(int(round(package_wt_in_df,0))) + " Grams in Weight"
+    # str_package_wt = str(int(round(package_wt_in_df,0))) + " gms in weight"
+    str_package_wt = str(int(round(package_wt_in_df,0)))[0:2] + "," + str(int(round(package_wt_in_df,0)))[2:5] + "," + str(int(round(package_wt_in_df,0)))[5:8] + " gms in weight"
     st.markdown(str_package_wt)
 with row2_3:
     total_units_in_df = df_data_filtered['total_units'].sum()
-    str_units = "🥅 " + str(total_units_in_df) + " Units"
+    # str_units = str(total_units_in_df) + " Units" #68,410,233
+    str_units = str(total_units_in_df)[0:2] + "," + str(total_units_in_df)[2:5] + "," + str(total_units_in_df)[5:8] + " Units"
     st.markdown(str_units)
 with row2_4:
     total_cost_in_df = df_data_filtered['total_shipcost'].sum()
-    str_cost = "$" + str(int(round(total_cost_in_df,0))) + " Dollars"
+    # str_cost = "$" + str(int(round(total_cost_in_df,0))) + " Dollars"
+    str_cost = "USD " + str(int(round(total_cost_in_df,0)))[0:2] + "," + str(int(round(total_cost_in_df,0)))[2:5] + "," + str(int(round(total_cost_in_df,0)))[5:8]
     st.markdown(str_cost)
 
 row3_spacer1, row3_1, row3_spacer2 = st.columns((.2, 7.1, .2))
@@ -349,11 +383,11 @@ row4_spacer1, row4_1, row4_spacer1, row4_2 = st.columns((.1,2,.1,2))
 
 with row4_1:
     st.write(f"""**Where is the demand originating from?**""")
-    plot_map(origin_demand_df)
+    plot_map_origin(origin_demand_df)
 
 with row4_2:
-    st.write("**Where is the demand being fulfilled from?**")
-    plot_map(df_data_filtered)
+    st.write("**Where is the demand fulfilled from?**")
+    plot_map_fulfill(df_data_filtered)
 
 # with row4_1:
 #     st.write(f"""**Where is the demand originating from?**""")
@@ -387,39 +421,6 @@ with row5_2:
     else:
         st.warning('Please select at least one state')
 
-# ### SCENARIO ###
-# row6_spacer1, row6_1, row6_spacer2 = st.columns((.2, 7.1, .2))
-# with row6_1:
-#     st.subheader('Analysis per Season')
-# row7_spacer1, row7_1, row7_spacer2, row7_2, row7_spacer3  = st.columns((.2, 2.3, .4, 4.4, .2))
-# with row7_1:
-#     st.markdown('Investigate developments and trends. Which season had teams score the most goals? Has the amount of passes per games changed?')
-#     plot_x_per_scenario_selected = st.selectbox ("Which attribute do you want to analyze?", list(label_attr_dict.keys()), key = 'attribute_season')
-#     plot_x_per_scenario_type = st.selectbox ("Which measure do you want to analyze?", types, key = 'measure_season')
-# with row7_2:
-#     if all_states_selected != 'Select states manually (choose below)' or selected_states:
-#         plot_x_per_scenario(plot_x_per_scenario_selected,plot_x_per_scenario_type)
-#     else:
-#         st.warning('Please select at least one state')
-#
-#
-# ### CORRELATION ###
-# corr_plot_types = ["Regression Plot (Recommended)","Standard Scatter Plot","Violin Plot (High Computation)"]
-#
-# row10_spacer1, row10_1, row10_spacer2 = st.columns((.2, 7.1, .2))
-# with row10_1:
-#     st.subheader('Correlation of Allocation Stats')
-# row11_spacer1, row11_1, row11_spacer2, row11_2, row11_spacer3  = st.columns((.2, 2.3, .4, 4.4, .2))
-# with row11_1:
-#     st.markdown('Investigate the correlation of attributes, but keep in mind correlation does not imply causation. Do stores from states that fulfill more packages also incur higher delivery charges?')
-#     corr_type = st.selectbox ("What type of correlation plot do you want to see?", corr_plot_types)
-#     y_axis_aspect2 = st.selectbox ("Which attribute do you want on the y-axis?", list(label_attr_dict.keys()))
-#     x_axis_aspect1 = st.selectbox ("Which attribute do you want on the x-axis?", list(label_attr_dict.keys()))
-# with row11_2:
-#     if all_states_selected != 'Select states manually (choose below)' or selected_states:
-#         plt_attribute_correlation(x_axis_aspect1, y_axis_aspect2)
-#     else:
-#         st.warning('Please select at least one state')
 
 ### SCENARIO ###
 row6_spacer1, row6_1, row6_spacer2 = st.columns((.2, 7.1, .2))
