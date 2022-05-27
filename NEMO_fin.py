@@ -321,7 +321,7 @@ st.sidebar.text('')
 
 ### SEASON RANGE ###
 st.sidebar.markdown("**First select the data range you want to analyze:** 👇")
-st.sidebar.text('')
+st.sidebar.write('\n')
 selected_scenario = st.sidebar.selectbox('Select the scenario for which you want the results displayed', ['Baseline','Audit TNT no buffer','MCA TNT no buffer'])
 df_data_filtered_scenario = filter_scenario(df_database)
 
@@ -332,13 +332,13 @@ end_date = st.sidebar.selectbox('Ending date for simulation', ['2022-02-26'])
 # df_data_filtered_date = filter_date(df_data_filtered_scenario)
 df_data_filtered_date = df_database
 
-st.sidebar.text('')
+st.sidebar.write('\n')
 
 ### TEAM SELECTION ###
 unique_states = get_unique_states(df_data_filtered_date)
 all_states_selected = st.sidebar.selectbox('Do you want to only include nodes from specific states? If the answer is yes, please check the box below and then select the state(s) in the new field.', ['Include all available states','Select states manually (choose below)'])
-st.sidebar.text('')
-st.sidebar.text('')
+
+st.sidebar.write('\n')
 if all_states_selected == 'Select states manually (choose below)':
     selected_states = st.sidebar.multiselect("Select/ Deselect the states you would like to include in the analysis. You can clear the current selection by clicking the corresponding x-button on the right", unique_states, default = unique_states)
 df_data_filtered = filter_states(df_data_filtered_date)
