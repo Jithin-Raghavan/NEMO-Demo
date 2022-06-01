@@ -18,11 +18,21 @@ import seaborn as sns
 import pydeck as pdk
 from pydeck.types import String
 
+from chart_studio import plotly
+import plotly.subplots
+import plotly.graph_objs as go
+
 
 st.set_page_config(layout="wide")
 
 ### Data Import ###
 df_database = pd.read_csv("./data/input_data.csv")
+# xlsx = pd.ExcelFile('./data/MechanicalMax_Results.xlsx')
+summary_df = pd.read_csv("./data/summary.csv")
+wkly_ov_df = pd.read_csv("./data/wkly_overall.csv")
+dly_ov_df = pd.read_csv("./data/dly_overall.csv")
+dly_loc_df = pd.read_csv("./data/dly_loc.csv")
+
 types = ["Mean","Median","Maximum","Minimum","Sum"]
 
 label_attr_dict = {"Packages":"packages","FEDEX Packages":"fedex_packages","UPS Packages":"ups_packages","Other Service Packages":"other_service_packages","No Service Packages":"no_service_packages","Long Zone Packages":"longzone_packages","Zone 2 Packages":"zone_two_packages","Total Zone":"total_zone","Avg. Zone":"average_zone","Total Lines":"total_lines","Average Lines":"average_lines","Total Units":"total_units","Avg. Units":"average_units","Total Shipcost":"total_shipcost","Avg.Shipcost":"average_shipcost","Total Package Weight":"total_package_weight","Avg. Package Weight":"average_package_weight"}
@@ -47,8 +57,9 @@ def get_unique_states(df_data):
 
 def filter_scenario(df_data):
     df_filtered_scenario = pd.DataFrame()
-    scenario_list = selected_scenario.split()
-    df_filtered_scenario = df_data[df_data['scenario'].isin(scenario_list)]
+    # scenario_list = selected_scenario.split()
+    df_filtered_scenario = df_data[df_data['scenario'].isin([selected_scenario])]
+    return df_filtered_scenario
 
 # def filter_date(df_data):
 #     df_filtered_date = pd.DataFrame()
@@ -227,14 +238,17 @@ def plt_attribute_correlation(aspect1, aspect2):
 
 
 # Converting DF into map ready form
-def map_ready_data(df_data):
-    df = df_data[['lng','lat','units_scaled']]
-    map_ready_df = df.reindex(df.index.repeat(df.units_scaled))
-    map_ready_df = map_ready_df.drop(columns =['units_scaled']).reset_index(drop=True)
+def map_ready_data(df_data, metric):
+    df = df_data.groupby(['lat','lng']).mean()[['default_throughput','mechmax_throughput']].reset_index()
+    df['default_tp_scaled'] = round(df['default_throughput']/10,0).astype(int)
+    df['mechmax_tp_scaled'] = round(df['mechmax_throughput']/10,0).astype(int)
+    df = df[['lng','lat',metric]]
+    map_ready_df = df.reindex(df.index.repeat(df[metric]))
+    map_ready_df = map_ready_df.drop(columns =[metric]).reset_index(drop=True)
     return map_ready_df
 
 # Plotting the PyDeck Chart
-def plot_map_origin(data):
+def plot_map_default(data,metric):
     st.write(
         pdk.Deck(
                     map_style="mapbox://styles/mapbox/light-v9",
@@ -248,22 +262,23 @@ def plot_map_origin(data):
                     layers=[
                         pdk.Layer(
                                     "HexagonLayer",
-                                    map_ready_data(data),
+                                    map_ready_data(data,metric),
                                     get_position=["lng", "lat"],
                                     auto_highlight=True,
                                     elevation_scale=5000,
                                     pickable=True,
                                     radius = 50000,
-                                    elevation_range=[0, 200],
+                                    elevation_range=[0, 300],
                                     extruded=True,
                                     coverage=1,
                                 )
                             ],
-                    tooltip={'html': '<b>Number of units (in 1000s):</b> {elevationValue}'}
+                    tooltip={'html': '<b>Avg. %Throughput</b> (scaled 500:1): {elevationValue}',
+                            'style': {"backgroundColor": "steelblue","color": "white"}}
                 ),
             )
 
-def plot_map_fulfill(data):
+def plot_map_mechmax(data,metric):
     st.write(
         pdk.Deck(
                     map_style="mapbox://styles/mapbox/light-v9",
@@ -277,34 +292,81 @@ def plot_map_fulfill(data):
                     layers=[
                         pdk.Layer(
                                     "HexagonLayer",
-                                    map_ready_data(data),
+                                    map_ready_data(data,metric),
                                     get_position=["lng", "lat"],
                                     auto_highlight=True,
                                     elevation_scale=5000,
                                     pickable=True,
                                     radius = 50000,
-                                    elevation_range=[0, 200],
+                                    elevation_range=[0, 300],
                                     extruded=True,
                                     coverage=1,
                                 )
                             ],
-                    tooltip={'html': '<b>Number of units (in 100s):</b> {elevationValue}'}
+                    tooltip={'html': '<b>Avg. %Throughput</b> (scaled 500:1): {elevationValue}',
+                            'style': {"backgroundColor": "steelblue","color": "white"}}
                 ),
             )
+
+def node_delta_units(data,node_type):
+    df = data.groupby(['state','node_type']).sum()[['mechmax_delta_units','uncap_delta_units']].reset_index()
+    df_node = df[df['node_type'].isin([node_type])][['state','mechmax_delta_units','uncap_delta_units']]
+    df_node_fin = filter_states(df_node)
+    return df_node
+
+def plot_delta_units(data, node_type):
+    fig = plotly.subplots.make_subplots(rows=1, cols=2, specs=[[{}, {}]], shared_yaxes=True, horizontal_spacing=0)
+
+    # BAR PLOT FOR DCs
+    # ----------------
+    if node_type == 'DC':
+        fig.append_trace(go.Bar(x=node_delta_units(data,node_type).mechmax_delta_units, y=node_delta_units(data,node_type).state, orientation='h', showlegend=True,
+                                text=node_delta_units(data,node_type).mechmax_delta_units, name='MECHANICAL MAX CAPACITY', marker_color='#595959'), 1, 1)
+        fig.append_trace(go.Bar(x=node_delta_units(data,node_type).uncap_delta_units, y=node_delta_units(data,node_type).state, orientation='h', showlegend=True,
+                                text=node_delta_units(data,node_type).uncap_delta_units, name='UNCAPACITATED', marker_color='#b20710'), 1, 2)
+    elif node_type == 'STR':
+        fig.append_trace(go.Bar(x=node_delta_units(data,node_type).mechmax_delta_units, y=node_delta_units(data,node_type).state, orientation='h', showlegend=True,
+                                text=node_delta_units(data,node_type).mechmax_delta_units, name='MECHANICAL MAX CAPACITY', marker_color='#ff9900'), 1, 1)
+        fig.append_trace(go.Bar(x=node_delta_units(data,'STR').uncap_delta_units, y=node_delta_units(data,'STR').state, orientation='h', showlegend=True,
+                                text=node_delta_units(data,'STR').uncap_delta_units, name='UNCAPACITATED', marker_color='#000099'), 1, 2)
+
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False, categoryorder='total descending', ticksuffix=' ', showline=False)
+    fig.update_traces(hovertemplate=None)
+
+    fig.update_layout(hovermode="x",
+                      height=500,
+                      xaxis_title='UNITS',
+                      yaxis_title="STATES",
+                      plot_bgcolor='white',
+                      paper_bgcolor='white',
+                      title_font=dict(size=20, color='#221f1f',family="Lato, sans-serif"),
+                      font=dict(color='#221f1f'),
+                      legend=dict(orientation="h", yanchor="bottom",y=1,xanchor="left"),
+                      hoverlabel=dict(bgcolor="black", font_size=14, font_family="Lato, sans-serif"))
+
+    if node_type == 'DC':
+        fig.update_layout(title = "Delta in units allocated at DCs from existing capacity state:")
+    elif node_type == 'STR':
+        fig.update_layout(title = "Delta in units allocated at Stores from existing capacity state:")
+
+    # fig.show()
+    st.plotly_chart(fig, use_container_width=True)
 
 
 ####################
 ### INTRODUCTION ###
 ####################
+st.write('<style>div.block-container{padding-top:2rem;}</style>', unsafe_allow_html=True)
 
 row0_spacer1, row0_1, row0_spacer2, row0_2, row0_spacer3 = st.columns((.1, 2.3, .1, 1.3, .1))
 with row0_1:
     st.title('NEMO - Order Allocation Simulator')
-    st.caption('A streamlit App by [Jithin Raghavan](https://www.linkedin.com/in/jithinraghavan/)')
+    # st.caption('A streamlit App by [Jithin Raghavan](https://www.linkedin.com/in/jithinraghavan/)')
 with row0_2:
     st.text("")
     # st.caption('Streamlit App by [Jithin Raghavan](https://www.linkedin.com/in/jithinraghavan/)')
-    row0_2.image('Index.jpeg', width = 100)
+    # row0_2.image('Index.jpeg', width = 100)
 row3_spacer1, row3_1, row3_spacer2 = st.columns((.1, 3.2, .1))
 with row3_1:
     st.markdown("NEMO is a simulation tool aiming to become the best-possible user resource for simulating Target's guest order allocation. It is used for studying the impact of input parameters on order allocation and is designed to help business partners in their decision making. The tool has the power to impact inventory placement and positioning, network optimization and labour planning for store operations.")
@@ -315,20 +377,20 @@ with row3_1:
 ### SELECTION ###
 #################
 
-st.sidebar.text('')
-st.sidebar.text('')
-st.sidebar.text('')
+# st.sidebar.text('')
+# st.sidebar.text('')
+# st.sidebar.text('')
 ### SEASON RANGE ###
 st.sidebar.markdown("**First select the data range you want to analyze:** 👇")
-selected_scenario = st.sidebar.selectbox('Select the scenario for which you want the results displayed', ['Baseline','Audit TNT no buffer','MCA TNT no buffer'])
-df_data_filtered_scenario = filter_scenario(df_database)
+selected_scenario = st.sidebar.selectbox('Select the scenario for which you want the results displayed', ['Default Capacity','Mechanical Max Capacity','Uncapacitated'])
+df_data_filtered_scenario = filter_scenario(dly_loc_df)
 
-unique_dates = get_unique_dates(df_database)
+# unique_dates = get_unique_dates(dly_loc_df)
 # start_date, end_date = st.sidebar.select_slider('Select the date range you want to include', unique_dates, value = ["‏‏‎2022-02-20","2022-02-26"])
-start_date = st.sidebar.selectbox('Starting date for simulation', ['2022-02-20'])
-end_date = st.sidebar.selectbox('Ending date for simulation', ['2022-02-26'])
+start_date = st.sidebar.selectbox('Starting date for simulation', ['2022-05-15'])
+end_date = st.sidebar.selectbox('Ending date for simulation', ['2022-05-21'])
 # df_data_filtered_date = filter_date(df_data_filtered_scenario)
-df_data_filtered_date = df_database
+df_data_filtered_date = df_data_filtered_scenario
 
 ### TEAM SELECTION ###
 unique_states = get_unique_states(df_data_filtered_date)
@@ -346,17 +408,17 @@ row2_spacer1, row2_1, row2_spacer2, row2_2, row2_spacer3, row2_3, row2_spacer4, 
 with row2_1:
     packages_in_df = df_data_filtered['packages'].sum()
     # str_packages = str(packages_in_df) + " Packages"
-    str_packages = str(packages_in_df)[0:2] + "," + str(packages_in_df)[2:5] + "," + str(packages_in_df)[5:8] + " Packages"
+    str_packages = str(packages_in_df)[0:1] + "," + str(packages_in_df)[1:4] + "," + str(packages_in_df)[4:7] + " Packages"
     st.markdown(str_packages)
 with row2_2:
-    package_wt_in_df = df_data_filtered['total_package_weight'].sum()
-    # str_package_wt = str(int(round(package_wt_in_df,0))) + " gms in weight"
-    str_package_wt = str(int(round(package_wt_in_df,0)))[0:2] + "," + str(int(round(package_wt_in_df,0)))[2:5] + "," + str(int(round(package_wt_in_df,0)))[5:8] + " gms in weight"
+    package_wt_in_df = df_data_filtered['total_lines'].sum()
+    # str_package_wt = str(int(round(package_wt_in_df,0))) + " Order-Lines"
+    str_package_wt = str(int(round(package_wt_in_df,0)))[0:1] + "," + str(int(round(package_wt_in_df,0)))[1:4] + "," + str(int(round(package_wt_in_df,0)))[4:7] + " Lines"
     st.markdown(str_package_wt)
 with row2_3:
     total_units_in_df = df_data_filtered['total_units'].sum()
-    # str_units = str(total_units_in_df) + " Units" #68,410,233
-    str_units = str(total_units_in_df)[0:2] + "," + str(total_units_in_df)[2:5] + "," + str(total_units_in_df)[5:8] + " Units"
+    # str_units = str(total_units_in_df) + " Units"
+    str_units = str(total_units_in_df)[0:1] + "," + str(total_units_in_df)[1:4] + "," + str(total_units_in_df)[4:7] + " Units"
     st.markdown(str_units)
 with row2_4:
     total_cost_in_df = df_data_filtered['total_shipcost'].sum()
@@ -372,91 +434,93 @@ with row3_1:
         st.dataframe(data=df_data_filtered.reset_index(drop=True))
 st.text('')
 
-#st.dataframe(data=df_stacked.reset_index(drop=True))
-#st.dataframe(data=df_data_filtered)
 
-### Data Import ###
-origin_demand_df = pd.read_csv("./data/origin_demand.csv")
+
+# FILTER DATA
+summary_df_fin = filter_states(summary_df)
+# dly_loc_df_fin = filter_states(dly_loc_df)
 
 # LAYING OUT THE MIDDLE SECTION OF THE APP WITH THE MAPS
 row4_spacer1, row4_1, row4_spacer1, row4_2 = st.columns((.1,2,.1,2))
 
 with row4_1:
-    st.write(f"""**Where is the demand originating from?**""")
-    plot_map_origin(origin_demand_df)
+    st.write(f"""**Average throughput in the week with existing capacities**""")
+    plot_map_default(summary_df_fin,'default_tp_scaled')
 
 with row4_2:
-    st.write("**Where is the demand fulfilled from?**")
-    plot_map_fulfill(df_data_filtered)
+    st.write("**Average throughput in the week with mechanical max capacities**")
+    plot_map_mechmax(summary_df_fin,'mechmax_tp_scaled')
 
+
+st.text("")
+st.text("")
+st.text("")
+
+
+# ### STATE ###
+# row4_spacer1, row4_1, row4_spacer2 = st.columns((.2, 7.1, .2))
 # with row4_1:
-#     st.write(f"""**Where is the demand originating from?**""")
-#     # layer = pdk.Layer("HeatmapLayer",map_data,opacity=1,get_position=["lng", "lat"],auto_highlight=True,aggregation=String('SUM'),get_weight="total_units")
-#     # r = pdk.Deck(layers=[layer])
-#     # r.to_html('heatmap.html')
-#     row4_1.image('DemandOrigin.png', width = 620)
+#     st.subheader('Analysis per State')
+# row5_spacer1, row5_1, row5_spacer2, row5_2, row5_spacer3  = st.columns((.2, 2.3, .4, 4.4, .2))
+# with row5_1:
+#     st.markdown('Investigate a variety of stats for nodes from each state. Which state fulfills most of our guest demand? How do stores in each state compare in terms of cost of delivery?')
+#     plot_x_per_state_selected = st.selectbox ("Which attribute do you want to analyze?", list(label_attr_dict.keys()), key = 'attribute_state')
+#     plot_x_per_state_type = st.selectbox ("Which measure do you want to analyze?", types, key = 'measure_state')
+#     specific_state_colors = st.checkbox("Use state specific color scheme")
+# with row5_2:
+#     if all_states_selected != 'Select states manually (choose below)' or selected_states:
+#         plot_x_per_state(plot_x_per_state_selected, plot_x_per_state_type)
+#     else:
+#         st.warning('Please select at least one state')
 #
-# with row4_2:
-#     st.write("**Where is the demand being fulfilled from?**")
-#     row4_2.image('DemandFulfilled.png', width = 620)
 
-st.text("")
-st.text("")
-st.text("")
-
-
-### STATE ###
 row4_spacer1, row4_1, row4_spacer2 = st.columns((.2, 7.1, .2))
 with row4_1:
-    st.subheader('Analysis per State')
-row5_spacer1, row5_1, row5_spacer2, row5_2, row5_spacer3  = st.columns((.2, 2.3, .4, 4.4, .2))
+    st.subheader('Constrained vs. Unconstrained Allocation')
+
+row5_1, row5_spacer2 = st.columns((7.1, .2))
 with row5_1:
-    st.markdown('Investigate a variety of stats for nodes from each state. Which state fulfills most of our guest demand? How do stores in each state compare in terms of cost of delivery?')
-    plot_x_per_state_selected = st.selectbox ("Which attribute do you want to analyze?", list(label_attr_dict.keys()), key = 'attribute_state')
-    plot_x_per_state_type = st.selectbox ("Which measure do you want to analyze?", types, key = 'measure_state')
-    specific_state_colors = st.checkbox("Use state specific color scheme")
-with row5_2:
-    if all_states_selected != 'Select states manually (choose below)' or selected_states:
-        plot_x_per_state(plot_x_per_state_selected, plot_x_per_state_type)
-    else:
-        st.warning('Please select at least one state')
+    # st.markdown("Analysing the delta in units allocated at nodes by node type across different capacity scenarios.")
+    plot_delta_units(summary_df_fin,'STR')
+    # st.write('<style>div.block-container{padding-top:2rem;}</style>', unsafe_allow_html=True)
+    plot_delta_units(summary_df_fin,'DC')
 
-
-### SCENARIO ###
-row6_spacer1, row6_1, row6_spacer2 = st.columns((.2, 7.1, .2))
-with row6_1:
-    st.subheader('Analysis per Scenario')
-row7_spacer1, row7_1, row7_spacer2, row7_2, row7_spacer3  = st.columns((.2, 2.3, .4, 4.4, .2))
-with row7_1:
-    st.markdown('Investigate developments and trends. Which season had teams score the most goals? Has the amount of passes per games changed?')
-    plot_x_per_scenario_selected = st.selectbox ("Which attribute do you want to analyze?", list(label_attr_dict.keys()), key = 'attribute_season')
-    plot_x_per_scenario_type = st.selectbox ("Which measure do you want to analyze?", types, key = 'measure_season')
-with row7_2:
-    if all_states_selected != 'Select states manually (choose below)' or selected_states:
-        plot_x_per_scenario(plot_x_per_scenario_selected,plot_x_per_scenario_type)
-    else:
-        st.warning('Please select at least one state')
-
-
-### CORRELATION ###
-corr_plot_types = ["Regression Plot (Recommended)","Standard Scatter Plot","Violin Plot (High Computation)"]
-
-row10_spacer1, row10_1, row10_spacer2 = st.columns((.2, 7.1, .2))
-with row10_1:
-    st.subheader('Correlation of Allocation Stats')
-row11_spacer1, row11_1, row11_spacer2, row11_2, row11_spacer3  = st.columns((.2, 2.3, .4, 4.4, .2))
-with row11_1:
-    st.markdown('Investigate the correlation of attributes, but keep in mind correlation does not imply causation. Do stores from states that fulfill more packages also incur higher delivery charges?')
-    corr_type = st.selectbox ("What type of correlation plot do you want to see?", corr_plot_types)
-    y_axis_aspect2 = st.selectbox ("Which attribute do you want on the y-axis?", list(label_attr_dict.keys()))
-    x_axis_aspect1 = st.selectbox ("Which attribute do you want on the x-axis?", list(label_attr_dict.keys()),index=8)
-with row11_2:
-    if all_states_selected != 'Select states manually (choose below)' or selected_states:
-        plt_attribute_correlation(x_axis_aspect1, y_axis_aspect2)
-    else:
-        st.warning('Please select at least one state')
-
-for variable in dir():
-    if variable[0:2] != "__":
-        del globals()[variable]
-del variable
+#
+# ### SCENARIO ###
+# row6_spacer1, row6_1, row6_spacer2 = st.columns((.2, 7.1, .2))
+# with row6_1:
+#     st.subheader('Analysis per Scenario')
+# row7_spacer1, row7_1, row7_spacer2, row7_2, row7_spacer3  = st.columns((.2, 2.3, .4, 4.4, .2))
+# with row7_1:
+#     st.markdown('Investigate developments and trends. Which season had teams score the most goals? Has the amount of passes per games changed?')
+#     plot_x_per_scenario_selected = st.selectbox ("Which attribute do you want to analyze?", list(label_attr_dict.keys()), key = 'attribute_season')
+#     plot_x_per_scenario_type = st.selectbox ("Which measure do you want to analyze?", types, key = 'measure_season')
+# with row7_2:
+#     if all_states_selected != 'Select states manually (choose below)' or selected_states:
+#         plot_x_per_scenario(plot_x_per_scenario_selected,plot_x_per_scenario_type)
+#     else:
+#         st.warning('Please select at least one state')
+#
+#
+# ### CORRELATION ###
+# corr_plot_types = ["Regression Plot (Recommended)","Standard Scatter Plot","Violin Plot (High Computation)"]
+#
+# row10_spacer1, row10_1, row10_spacer2 = st.columns((.2, 7.1, .2))
+# with row10_1:
+#     st.subheader('Correlation of Allocation Stats')
+# row11_spacer1, row11_1, row11_spacer2, row11_2, row11_spacer3  = st.columns((.2, 2.3, .4, 4.4, .2))
+# with row11_1:
+#     st.markdown('Investigate the correlation of attributes, but keep in mind correlation does not imply causation. Do stores from states that fulfill more packages also incur higher delivery charges?')
+#     corr_type = st.selectbox ("What type of correlation plot do you want to see?", corr_plot_types)
+#     y_axis_aspect2 = st.selectbox ("Which attribute do you want on the y-axis?", list(label_attr_dict.keys()))
+#     x_axis_aspect1 = st.selectbox ("Which attribute do you want on the x-axis?", list(label_attr_dict.keys()),index=8)
+# with row11_2:
+#     if all_states_selected != 'Select states manually (choose below)' or selected_states:
+#         plt_attribute_correlation(x_axis_aspect1, y_axis_aspect2)
+#     else:
+#         st.warning('Please select at least one state')
+#
+# for variable in dir():
+#     if variable[0:2] != "__":
+#         del globals()[variable]
+# del variable
