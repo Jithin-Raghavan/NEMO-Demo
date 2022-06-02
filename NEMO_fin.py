@@ -190,14 +190,14 @@ def plot_delta_units(data, node_type):
     # ----------------
     if node_type == 'DC':
         fig.append_trace(go.Bar(x=node_delta_units(data,node_type).mechmax_delta_units, y=node_delta_units(data,node_type).state, orientation='h', showlegend=True,
-                                text=node_delta_units(data,node_type).mechmax_delta_units, name='MECHANICAL MAX CAPACITY', marker_color='#595959'), 1, 1)
+                                text=node_delta_units(data,node_type).mechmax_delta_units, name='MAXIMUM FEASIBLE CAPACITY', marker_color='#595959'), 1, 1)
         fig.append_trace(go.Bar(x=node_delta_units(data,node_type).uncap_delta_units, y=node_delta_units(data,node_type).state, orientation='h', showlegend=True,
-                                text=node_delta_units(data,node_type).uncap_delta_units, name='UNCAPACITATED', marker_color='#b20710'), 1, 2)
+                                text=node_delta_units(data,node_type).uncap_delta_units, name='INFINITE CAPACITY', marker_color='#b20710'), 1, 2)
     elif node_type == 'STR':
         fig.append_trace(go.Bar(x=node_delta_units(data,node_type).mechmax_delta_units, y=node_delta_units(data,node_type).state, orientation='h', showlegend=True,
-                                text=node_delta_units(data,node_type).mechmax_delta_units, name='MECHANICAL MAX CAPACITY', marker_color='#ff9900'), 1, 1)
+                                text=node_delta_units(data,node_type).mechmax_delta_units, name='MAXIMUM FEASIBLE CAPACITY', marker_color='#ff9900'), 1, 1)
         fig.append_trace(go.Bar(x=node_delta_units(data,'STR').uncap_delta_units, y=node_delta_units(data,'STR').state, orientation='h', showlegend=True,
-                                text=node_delta_units(data,'STR').uncap_delta_units, name='UNCAPACITATED', marker_color='#000099'), 1, 2)
+                                text=node_delta_units(data,'STR').uncap_delta_units, name='INFINITE CAPACITY', marker_color='#000099'), 1, 2)
 
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=False, categoryorder='total descending', ticksuffix=' ', showline=False)
@@ -237,11 +237,11 @@ def plot_comb_plot(data, abs_attr, p_attr):
 
     # ADD THE BAR AND LINE PLOTS IN THE RESPECTIVE AXES
     fig.add_trace(go.Bar(x=bar_x, y=bar_y1, name=abs_attr + ": Default Capacity", marker_color='#b3d1ff'), secondary_y=False,)
-    fig.add_trace(go.Bar(x=bar_x, y=bar_y2, name=abs_attr + ": Mechanical Max. Capacity", marker_color='#66a3ff'), secondary_y=False,)
-    fig.add_trace(go.Bar(x=bar_x, y=bar_y3, name=abs_attr + ": Uncapacitated Capacity", marker_color='#0052cc'), secondary_y=False,)
+    fig.add_trace(go.Bar(x=bar_x, y=bar_y2, name=abs_attr + ": Maximum Feasible Capacity", marker_color='#66a3ff'), secondary_y=False,)
+    fig.add_trace(go.Bar(x=bar_x, y=bar_y3, name=abs_attr + ": Infinite Capacity", marker_color='#0052cc'), secondary_y=False,)
 
     fig.add_trace(go.Scatter(x=bar_x, y=line_y1, name=p_attr + ": Default Capacity",marker_color='#ff8000'), secondary_y=True,)
-    fig.add_trace(go.Scatter(x=bar_x, y=line_y2, name=p_attr + ": Mechanical Max. Capacity",marker_color='#ffcc00'), secondary_y=True,)
+    fig.add_trace(go.Scatter(x=bar_x, y=line_y2, name=p_attr + ": Maximum Feasible Capacity",marker_color='#ffcc00'), secondary_y=True,)
 
     # ADD FIGURE TITLE
     # fig.update_layout(title_text="<b>SUMMARY METRICS COMPARISON<b>")
@@ -250,7 +250,7 @@ def plot_comb_plot(data, abs_attr, p_attr):
     fig.update_xaxes(title_text="ORDER DATE")
 
     # SET Y-AXES TITLES
-    fig.update_yaxes(title_text="TOTAL PACKAGES", secondary_y=False)
+    fig.update_yaxes(title_text=abs_attr.upper(), secondary_y=False)
     fig.update_yaxes(title_text="PERCENTAGE", secondary_y=True)
 
     fig.update_layout(autosize=False,width=1000,height=600,)
@@ -284,7 +284,7 @@ with row1_1:
 # USER SELECTION: SCENARIO
 # ------------------------
 st.sidebar.markdown("**First select the data range you want to analyze:** 👇")
-selected_scenario = st.sidebar.selectbox('Select the scenario for which you want the results displayed', ['Default Capacity','Mechanical Max Capacity','Uncapacitated'])
+selected_scenario = st.sidebar.selectbox('Select the scenario for which you want the results displayed', ['Default Capacity','Maximum Feasible Capacity','Infinite Capacity'])
 df_data_filtered_scenario = filter_scenario(dly_loc_df)
 
 # USER SELECTION: DATES
@@ -354,11 +354,11 @@ dly_ov_df_fin = filter_states(dly_ov_df)
 # ------------------------------------------------------
 row5_spacer1, row5_1, row5_spacer1, row5_2 = st.columns((.1,2,.1,2))
 with row5_1:
-    st.write(f"""**Average throughput in the week with existing capacities**""")
+    st.write(f"""**Average capacity consumed in the week with existing capacities**""")
     plot_map_throughput(summary_df_fin,'default_tp_scaled')
 
 with row5_2:
-    st.write("**Average throughput in the week with mechanical max capacities**")
+    st.write("**Average capacity consumed in the week with maximum feasible capacities**")
     plot_map_throughput(summary_df_fin,'mechmax_tp_scaled')
 
 # ADDING LINESPACES BEFORE THE NEXT SET OF PLOTS
