@@ -342,7 +342,6 @@ st.text('')
 # FILTER DATA FOR PLOTTING THE CHARTS
 # -----------------------------------
 summary_df_fin = filter_states(summary_df)
-dly_ov_df_fin = filter_states(dly_ov_df)
 
 # LAYING OUT THE MIDDLE SECTION OF THE APP WITH THE MAPS
 # ------------------------------------------------------
