@@ -393,7 +393,7 @@ with row8_1:
 with row8_2:
     plot_comb_abs = st.selectbox("Which attribute do you want to compare in absolute measures?", list(label_attr_abs_dict.keys()), key = 'attribute_season', index=7)
 with row8_3:
-    plot_comb_p = st.selectbox("Which attribute do you want to compare in percentage terms?", list(label_attr_p_dict.keys()), key = 'measure_season', index=14)
+    plot_comb_p = st.selectbox("Which attribute do you want to compare in percentage terms?", list(label_attr_p_dict.keys()), key = 'measure_season', index=13)
 
 # PLOTTING THE SUMMARY COMPARISON PLOT
 # ------------------------------------
