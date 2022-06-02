@@ -393,7 +393,7 @@ with row8_3:
 row9_spacer1, row9_1, row9_spacer2 = st.columns((.1, 7.3, .1))
 with row9_1:
     if all_states_selected != 'Select states manually (choose below)' or selected_states:
-        plot_comb_plot(dly_ov_df_fin, plot_comb_abs, plot_comb_p)
+        plot_comb_plot(dly_ov_df, plot_comb_abs, plot_comb_p)
     else:
         st.warning('Please select at least one state')
 
