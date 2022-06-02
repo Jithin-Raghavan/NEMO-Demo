@@ -131,15 +131,21 @@ def node_delta_units(data,node_type):
 # CONVERTING THE DATAFRAME INTO MAP READY FORM - FOR SUMMARY PLOT
 # ---------------------------------------------------------------
 def comb_plot_data(data, abs_attr, p_attr):
+
     abs_attr = label_attr_abs_dict[abs_attr]
     p_attr = label_attr_p_dict[p_attr]
+
     df_default = data[data['scenario']=="Default"][['crte_d', abs_attr, p_attr]]
     df_default.columns = ['crte_d', 'def_abs', 'def_p']
+
     df_mechmax=data[data['scenario']=="Mechmax"][['crte_d', abs_attr, p_attr]]
     df_mechmax.columns = ['crte_d', 'mm_abs', 'mm_p']
+
     df_uncap=data[data['scenario']=="Uncap"][['crte_d', abs_attr, p_attr]]
     df_uncap.columns = ['crte_d', 'unc_abs', 'unc_p']
+
     plot_df = df_default.merge(df_mechmax, how='left', on=['crte_d']).merge(df_uncap, how='left', on=['crte_d'])
+
     return plot_df
 
 
